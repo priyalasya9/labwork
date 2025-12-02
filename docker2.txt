@@ -1,0 +1,414 @@
+
+
+# ⭐ PART 1 — BASIC MULTI-CONTAINER SETUP (NGINX + POSTGRES)
+
+### **1. Create project folder**
+
+```
+mkdir compose-lab
+cd compose-lab
+```
+
+### **2. Create docker-compose.yml**
+
+```
+nano docker-compose.yml
+```
+
+### **3. Paste this content**
+
+```yaml
+version: "3.9"
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+```
+
+### **4. Start services**
+
+```
+docker compose up -d
+```
+
+### **5. Check running containers**
+
+```
+docker compose ps
+```
+
+### **6. Open nginx in browser**
+
+→ Go to: **[http://localhost:8080](http://localhost:8080)**
+
+### **7. Verify db container**
+
+```
+docker logs $(docker compose ps -q db)
+```
+
+---
+
+# ⭐ PART 2 — ADD REDIS + DEPENDENCY
+
+### **8. Edit docker-compose.yml**
+
+```
+nano docker-compose.yml
+```
+
+### **9. Replace the file with this content**
+
+```yaml
+version: "3.9"
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+  redis:
+    image: redis:alpine
+```
+
+### **10. Apply changes**
+
+```
+docker compose up -d
+```
+
+### **11. Verify all 3 services**
+
+```
+docker compose ps
+```
+
+---
+
+# ⭐ PART 3 — DEPLOY TO ANOTHER MACHINE
+
+### **12. Zip the folder**
+
+```
+zip -r compose-lab.zip compose-lab
+```
+
+### **13. Transfer to another machine**
+
+(USB, email, etc.)
+
+### **14. On new machine, unzip and run**
+
+```
+docker compose up -d
+```
+
+### **15. Verify**
+
+```
+docker compose ps
+```
+
+---
+
+# ⭐ PART 4 — NETWORKING + PERSISTENT STORAGE
+
+### **16. Edit docker-compose.yml**
+
+```
+nano docker-compose.yml
+```
+
+### **17. Replace the file with this content**
+
+```yaml
+version: "3.9"
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - app-net
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+  redis:
+    image: redis:alpine
+    networks:
+      - app-net
+
+networks:
+  app-net:
+
+volumes:
+  db-data:
+```
+
+### **18. Re-create containers**
+
+```
+docker compose up -d
+```
+
+### **19. Check network**
+
+```
+docker network ls
+```
+
+### **20. Check volume**
+
+```
+docker volume ls
+```
+
+### **21. Enter Postgres**
+
+```
+docker exec -it $(docker compose ps -q db) psql -U demo -d demo_db
+```
+
+### **22. Create test table**
+
+```
+CREATE TABLE test (id SERIAL PRIMARY KEY, name TEXT);
+INSERT INTO test (name) VALUES ('persisted');
+SELECT * FROM test;
+```
+
+### **23. Exit psql**
+
+```
+\q
+```
+
+### **24. Stop containers**
+
+```
+docker compose down
+```
+
+### **25. Start again**
+
+```
+docker compose up -d
+```
+
+### **26. Check if data persisted**
+
+```
+docker exec -it $(docker compose ps -q db) psql -U demo -d demo_db -c "SELECT * FROM test;"
+```
+
+---
+
+# ⭐ PART 5 — FAST DEVELOPMENT (FLASK APP + COMPOSE)
+
+### **27. Create flask-app folder**
+
+```
+mkdir flask-app
+cd flask-app
+```
+
+### **28. Create app.py**
+
+```
+nano app.py
+```
+
+### **29. Paste this**
+
+```python
+from flask import Flask
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Hello from Flask + Docker!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+```
+
+### **30. Create Dockerfile**
+
+```
+nano Dockerfile
+```
+
+### **31. Paste this**
+
+```dockerfile
+FROM python:3.10-slim
+WORKDIR /app
+COPY app.py /app/
+RUN pip install flask
+CMD ["python", "app.py"]
+```
+
+### **32. Go back to compose-lab**
+
+```
+cd ..
+```
+
+### **33. Edit docker-compose.yml**
+
+```
+nano docker-compose.yml
+```
+
+### **34. Replace ONLY the web section with this**
+
+```yaml
+  web:
+    build: ./flask-app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    networks:
+      - app-net
+```
+
+### **35. Build & run**
+
+```
+docker compose up --build -d
+```
+
+### **36. Open Flask app**
+
+→ [http://localhost:5000](http://localhost:5000)
+
+### **37. Edit app.py (modify text)**
+
+Return: `"Hello Docker Compose!"`
+
+### **38. Rebuild only web**
+
+```
+docker compose up --build -d web
+```
+
+### **39. Refresh browser**
+
+→ Should show updated message.
+
+---
+
+# ⭐ PART 6 — SCALING, LOGS, STATS
+
+### **40. Scale redis**
+
+```
+docker compose up -d --scale redis=2
+```
+
+### **41. Check containers**
+
+```
+docker compose ps
+```
+
+### **42. Logs of web**
+
+```
+docker compose logs web
+```
+
+### **43. Live logs**
+
+```
+docker compose logs -f db
+```
+
+### **44. Stats**
+
+```
+docker stats
+```
+
+---
+
+# ⭐ PART 7 — CLEANUP & EXPORT
+
+### **45. Remove scaling**
+
+```
+docker compose up -d --scale redis=1
+```
+
+### **46. Export image (optional)**
+
+```
+docker save -o flask.tar $(docker images | grep flask-app | awk '{print $3}')
+```
+
+### **47. Import image on another machine**
+
+```
+docker load -i flask.tar
+```
+
+### **48. Zip entire project**
+
+```
+zip -r compose-lab.zip .
+```
+
+### **49. Stop everything**
+
+```
+docker compose down
+```
+
+### **50. Full cleanup (remove volume + networks)**
+
+```
+docker compose down --volumes --remove-orphans
+```
+
+---
+
+# 🎯 **THIS IS YOUR FINAL WEEK 6 LAB CHECKLIST**
+
+✔ All steps are **numbered**
+✔ All steps are **copyable**
+✔ All content is **clear and exam-ready**
+
+---
+
