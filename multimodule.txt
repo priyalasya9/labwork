@@ -1,0 +1,351 @@
+
+
+* `MultiModule/` (parent, packaging = `pom`)
+
+  * `MultiModuleChild1/` (core library, `jar`)
+  * `MultiModuleChild2/` (web module, `war`, depends on Child1)
+
+---
+
+
+
+---
+
+# B. Step-by-step **Eclipse** procedure (point-wise)
+
+### 1. Create the parent project
+
+1. File → New → Other → Maven → **Maven Project** → Next.
+2. Check **Create a simple project (skip archetype selection)** → Next.
+3. Enter:
+
+   * **Group Id:** `KMIT`
+   * **Artifact Id:** `MultiModule`
+   * **Version:** `0.0.1-SNAPSHOT`
+   * **Packaging:** `pom`
+4. Click **Finish**. You now have `MultiModule` folder with `pom.xml`.
+
+### 2. Create Child Module 1 (Core / JAR)
+
+1. Right-click `MultiModule` → New → **Maven Module**.
+2. Check **Create a simple project (skip archetype selection)** → Next.
+3. Enter **Artifact Id:** `MultiModuleChild1`. (GroupId and Version will inherit from parent.)
+4. Packaging default is `jar` → Finish.
+5. Expand `MultiModuleChild1` → create folder structure:
+
+   * `src/main/java` → put your Java classes here (e.g., `com.kmit.core.Util.java`)
+   * `src/test/java` → put tests.
+
+### 3. Create Child Module 2 (Web / WAR)
+
+1. Right-click `MultiModule` → New → **Maven Module**.
+2. Choose **maven-archetype-webapp** (or simply create simple project and set packaging `war`).
+3. Enter **Artifact Id:** `MultiModuleChild2`.
+4. Packaging should be `war`. Finish.
+5. Project will contain `src/main/webapp/` and `WEB-INF`.
+
+### 4. Add parent reference to each child (Eclipse sometimes does this automatically)
+
+1. Open `MultiModuleChild1/pom.xml` and ensure the `<parent>` block points to the parent:
+
+```xml
+<parent>
+  <groupId>KMIT</groupId>
+  <artifactId>MultiModule</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+</parent>
+```
+
+2. Do the same for `MultiModuleChild2/pom.xml`.
+
+### 5. Add dependency of Child2 on Child1
+
+1. Open `MultiModuleChild2/pom.xml`.
+2. Inside `<dependencies>` add:
+
+```xml
+<dependency>
+  <groupId>KMIT</groupId>
+  <artifactId>MultiModuleChild1</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+</dependency>
+```
+
+### 6. Update Maven project configuration
+
+1. Right-click parent → **Maven → Update Project...** (tick all modules) → OK.
+
+### 7. Build from Eclipse
+
+1. Right-click `MultiModule` (parent) → **Run As → Maven build...**
+2. In Goals: type `clean install` → Apply → Run.
+3. Watch Console: you should see modules building in order and `BUILD SUCCESS`.
+
+### 8. Run/Deploy artifacts
+
+* **Child1**: library → no run; check `target/` for `MultiModuleChild1-0.0.1-SNAPSHOT.jar`.
+* **Child2**: WAR → Right-click `MultiModuleChild2` → Run As → **Run on Server** (choose Tomcat). Or copy `target/MultiModuleChild2-0.0.1-SNAPSHOT.war` to Tomcat `webapps/`.
+
+---
+
+# C. Step-by-step **Command Line (CLI)** procedure (point-wise)
+
+> Run these commands from the directory where you want the `MultiModule` folder.
+
+### 1. Create parent skeleton (quick way)
+
+1. `mkdir MultiModule && cd MultiModule`
+2. Create `pom.xml` (you’ll paste the parent POM provided later).
+
+### 2. Create Child1 and Child2 folders
+
+1. `mkdir MultiModuleChild1 MultiModuleChild2`
+2. Add child `pom.xml` files (provided later) into each directory.
+
+### 3. Create sample source files
+
+1. Child1: `src/main/java/com/kmit/core/HelloCore.java` with a simple class and method.
+2. Child2: `src/main/webapp/index.jsp` or `src/main/java` servlet that uses `HelloCore`.
+
+### 4. Build entire multi-module project
+
+1. From `MultiModule` folder run:
+
+   ```
+   mvn clean install
+   ```
+2. Maven will build parent → child1 → child2.
+3. Verify `.m2` entries: `~/.m2/repository/KMIT/MultiModuleChild1/0.0.1-SNAPSHOT/`
+
+### 5. Build a single module + required modules (if you change only child2)
+
+1. From parent folder:
+
+   ```
+   mvn -pl MultiModuleChild2 -am clean install
+   ```
+
+   * `-pl` = projects list, `-am` = also make required dependencies (will build child1 if needed).
+
+---
+
+# D. Verification & common checks (point-wise)
+
+1. After `mvn clean install`, each module will have `target/` with:
+
+   * `MultiModuleChild1/target/MultiModuleChild1-0.0.1-SNAPSHOT.jar`
+   * `MultiModuleChild2/target/MultiModuleChild2-0.0.1-SNAPSHOT.war`
+2. Check local repo:
+
+   ```
+   ls ~/.m2/repository/KMIT/MultiModuleChild1/0.0.1-SNAPSHOT/
+   ```
+3. If `Child2` build fails with “dependency not found”, run build on parent (or use `-am`).
+4. To view dependency tree:
+
+   ```
+   mvn dependency:tree -pl MultiModuleChild2
+   ```
+5. To build only tests or skip tests:
+
+   * Run tests: `mvn -Dtest=MyTest test`
+   * Skip tests: `mvn -DskipTests clean install`
+
+---
+
+# E. Troubleshooting tips (point-wise)
+
+1. **Dependency not found:** ensure Child1 built and installed to local repo. Build parent first.
+2. **Version mismatch:** ensure child dependency version matches parent/project version.
+3. **Wrong packaging:** make sure parent has `packaging=pom`. Child web must have `war`.
+4. **IDE issues:** use **Maven → Update Project** in Eclipse to sync pom changes.
+5. **Servlet API errors:** add `javax.servlet-api` with `<scope>provided</scope>` in web module.
+6. **Unsupported class version:** check `maven-compiler-plugin` source/target version (set to 17 for JDK17).
+7. **If Console asks Y/N while creating archetypes:** type `Y` (only during archetype download).
+
+---
+
+# F. What to include in your lab document / screenshots (point-wise)
+
+1. Screenshot: Eclipse Project Explorer showing parent + two child modules.
+2. Screenshot: parent `pom.xml` open.
+3. Screenshot: child2 `pom.xml` showing dependency on child1.
+4. Screenshot: Eclipse Console showing `BUILD SUCCESS` for `clean install`.
+5. Screenshot: `target/` folder listing the produced `.jar` and `.war`.
+6. Screenshot: `~/.m2/repository/KMIT/...` showing installed artifacts.
+7. Screenshot: web page served from Tomcat (index.jsp) if you deployed WAR.
+8. Observations: short notes on build order, any errors encountered and fixes.
+
+---
+
+# G. Three ready-to-use POM files
+
+> Copy these into the three projects: `MultiModule/pom.xml`, `MultiModuleChild1/pom.xml`, `MultiModuleChild2/pom.xml`.
+
+---
+
+### 1) `MultiModule/pom.xml` (parent)
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>KMIT</groupId>
+  <artifactId>MultiModule</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>MultiModule Parent</name>
+  <description>Parent POM for MultiModule lab</description>
+
+  <modules>
+    <module>MultiModuleChild1</module>
+    <module>MultiModuleChild2</module>
+  </modules>
+
+  <!-- Centralized dependency versions and plugin config -->
+  <dependencyManagement>
+    <dependencies>
+      <!-- define versions here for children to inherit -->
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>5.10.0</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Compiler plugin configured for Java 17 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.11.0</version>
+          <configuration>
+            <source>17</source>
+            <target>17</target>
+            <release>17</release>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>
+```
+
+---
+
+### 2) `MultiModuleChild1/pom.xml` (core library, JAR)
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>KMIT</groupId>
+    <artifactId>MultiModule</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>MultiModuleChild1</artifactId>
+  <packaging>jar</packaging>
+  <name>MultiModuleChild1 - core</name>
+
+  <dependencies>
+    <!-- Example test dependency (inherits version from parent dependencyManagement if present) -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <!-- Optional: if you want to make this JAR executable, add jar plugin config and mainClass -->
+</project>
+```
+
+---
+
+### 3) `MultiModuleChild2/pom.xml` (web module, WAR depending on Child1)
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>KMIT</groupId>
+    <artifactId>MultiModule</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>MultiModuleChild2</artifactId>
+  <packaging>war</packaging>
+  <name>MultiModuleChild2 - web</name>
+
+  <dependencies>
+    <!-- Dependency on child1 (internal module) -->
+    <dependency>
+      <groupId>KMIT</groupId>
+      <artifactId>MultiModuleChild1</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
+
+    <!-- Servlet API (provided by the container) -->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>4.0.1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- JSTL if needed -->
+    <dependency>
+      <groupId>javax.servlet.jsp.jstl</groupId>
+      <artifactId>jstl</artifactId>
+      <version>1.2</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Optional: ensure war plugin behaves normally; default is fine -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.4.0</version>
+        <configuration>
+          <failOnMissingWebXml>false</failOnMissingWebXml>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+```
+
+---
+
+# H. Extra useful Maven CLI commands (point-wise)
+
+1. Build whole multi-module: `mvn clean install` (run from parent).
+2. Build only one module & required modules: `mvn -pl MultiModuleChild2 -am clean install`.
+3. Show dependency tree for child2: `mvn -pl MultiModuleChild2 dependency:tree`.
+4. Install a local jar manually (if needed):
+
+   ```
+   mvn install:install-file -Dfile=path/to/lib.jar -DgroupId=com.example -DartifactId=lib -Dversion=1.0 -Dpackaging=jar
+   ```
+
+---
+
