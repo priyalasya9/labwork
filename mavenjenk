@@ -1,0 +1,212 @@
+
+
+# PART A — MAVEN JAVA AUTOMATION (MavenJava_Build → MavenJava_Test → Pipeline View)
+
+### Create Build Job — `MavenJava_Build`
+
+1. Open Jenkins at `http://localhost:8080` and log in.
+2. Click **New Item** (left menu).
+3. Enter **MavenJava_Build** as name → select **Freestyle project** → **OK**.
+4. In **Description** enter: `Java Build demo`.
+5. Under **Source Code Management** → **Git**:
+
+   * Repository URL: `GIT_MAVEN_JAVA_URL`
+   * Branches to build: `*/main`  (or `*/master` depending on your repo)
+6. Under **Build**:
+
+   * Click **Add build step → Invoke top-level Maven targets**
+
+     * Maven Version: `MAVEN_HOME`
+     * Goals: `clean`
+   * Click **Add build step → Invoke top-level Maven targets** (again)
+
+     * Maven Version: `MAVEN_HOME`
+     * Goals: `install`
+7. Under **Post-build Actions**:
+
+   * Click **Add post-build action → Archive the artifacts**
+
+     * Files to archive: `**/*`
+   * Click **Add post-build action → Build other projects**
+
+     * Projects to build: `MavenJava_Test`
+     * Trigger only if build is stable → **tick** that option
+8. Click **Apply → Save**.
+
+### Create Test Job — `MavenJava_Test`
+
+9. Click **New Item** → name `MavenJava_Test` → Freestyle project → **OK**.
+10. Description: `Test demo`.
+11. Under **Build Environment** → check **Delete workspace before build starts**.
+12. Add build step → **Copy artifacts from another project**:
+
+    * Project name: `MavenJava_Build`
+    * Which build: **Stable build only** → tick
+    * Artifacts to copy: `**/*`
+13. Add build step → **Invoke top-level Maven targets**:
+
+    * Maven Version: `MAVEN_HOME`
+    * Goals: `test`
+14. Post-build action → **Archive the artifacts**:
+
+    * Files to archive: `**/*`
+15. Click **Apply → Save**.
+
+### Create Pipeline View — `MavenJava_Pipeline`
+
+16. On Jenkins dashboard click the **+** (or *New View*).
+17. Enter name: `MavenJava_Pipeline`.
+18. Select **Build pipeline view** → **OK**.
+19. In Pipeline configuration:
+
+    * Layout: *Based on upstream/downstream relationship*
+    * Initial job: `MavenJava_Build`
+20. Click **Apply → Save**.
+
+### Run and Validate
+
+21. From `MavenJava_Pipeline` or job page, click **Build Now** (or run the initial job).
+22. To inspect output: open the job → click the build number → **Console Output** (or click the small black console icon).
+23. Expected results:
+
+    * `MavenJava_Build` completes and is **SUCCESS / green**.
+    * `MavenJava_Test` triggered automatically and is **SUCCESS / green**.
+    * Artifacts archived in both jobs (Check **Last Successful Artifacts** link).
+
+---
+
+# PART B — MAVEN WEB AUTOMATION (MavenWeb_Build → MavenWeb_Test → MavenWeb_Deploy → Pipeline View)
+
+### Create Build Job — `MavenWeb_Build`
+
+1. Jenkins → **New Item** → name `MavenWeb_Build` → Freestyle project → **OK**.
+2. Description: `Web Build demo`.
+3. SCM → Git:
+
+   * Repository URL: `GIT_MAVEN_WEB_URL`
+   * Branch: `*/main` (or `*/master`)
+4. Build steps:
+
+   * Invoke Maven goals: `clean` (Maven Version: `MAVEN_HOME`)
+   * Invoke Maven goals: `install` (Maven Version: `MAVEN_HOME`)
+5. Post-build actions:
+
+   * Archive the artifacts: `**/*`
+   * Build other projects: `MavenWeb_Test` → Trigger: **Only if build is stable**
+6. **Apply → Save**
+
+### Create Test Job — `MavenWeb_Test`
+
+7. New Item → `MavenWeb_Test` → Freestyle → **OK**.
+8. Description: `Test demo`.
+9. Build Environment → Check **Delete workspace before build starts**.
+10. Add build step → **Copy artifacts from another project**:
+
+    * Project: `MavenWeb_Build`
+    * Build: **Stable build only**
+    * Artifacts to copy: `**/*`
+11. Add build step → **Invoke top-level Maven targets**:
+
+    * Maven Goals: `test` (MAVEN_HOME)
+12. Post-build actions:
+
+    * Archive the artifacts: `**/*`
+    * Build other projects: `MavenWeb_Deploy`
+13. **Apply → Save**
+
+### Create Deploy Job — `MavenWeb_Deploy`
+
+14. New Item → `MavenWeb_Deploy` → Freestyle → **OK**.
+15. Description: `Web Code Deployment`.
+16. Build Environment → Check **Delete workspace before build starts**.
+17. Add build step → **Copy artifacts from another project**:
+
+    * Project name: `MavenWeb_Test`
+    * Build: **Stable build only**
+    * Artifacts: `**/*`
+18. Post-build action → **Deploy WAR/EAR to a container**:
+
+    * WAR/EAR files: `**/*.war`
+    * Context path: `webpath`  (this becomes `http://<tomcat-host>:<port>/webpath`)
+    * Add container → **Tomcat 9.x remote**
+
+      * Tomcat URL: `http://localhost:8085/`  *(or your Tomcat URL)*
+      * Credentials: choose **Add** → (Kind: Username with password)
+
+        * Username: `admin`
+        * Password: `1234`
+      * Save credentials and select them for the container entry
+19. **Apply → Save**
+
+### Create Pipeline View — `MavenWeb_Pipeline`
+
+20. Dashboard → **+ / New View** → name `MavenWeb_Pipeline`.
+21. Select **Build pipeline view** → Initial job: `MavenWeb_Build` → Save.
+
+### Run and Validate Deployment
+
+22. Run `MavenWeb_Build` (Build Now).
+23. Check console output for each job in order (Build → Test → Deploy). Use the Console Output link.
+24. To verify Tomcat deployment:
+
+    * Open browser to `http://localhost:8085/` (Tomcat manager or root).
+    * Log in with Tomcat manager credentials when requested.
+    * Look for the application context `/webpath`. Click it — you should see the deployed web app.
+25. If deployment fails, check:
+
+    * Tomcat manager user existence in `tomcat-users.xml`
+    * Correct Tomcat URL, port, and credentials in Jenkins configuration
+    * That the built artifact is a `.war` under `target/` in the copied artifacts
+
+---
+
+# PART C — Credentials & Important Checks (exact steps)
+
+1. **Add Git credentials** (if repo is private):
+
+   * Manage Jenkins → Credentials → (global) → Add Credentials
+   * Kind: Username with password or SSH Username with private key
+   * ID: `git-creds` (optional)
+   * In job’s Git SCM → Credentials → select the credential
+
+2. **Add Tomcat credentials**:
+
+   * Manage Jenkins → Credentials → Add (Username with password)
+   * Username: `admin` Password: `1234` → ID: `tomcat-admin`
+   * In Deploy to container container config, choose this credential.
+
+3. **Global Maven config**:
+
+   * Manage Jenkins → Global Tool Configuration → Maven → Add Maven
+   * Name: `MAVEN_HOME`
+   * MAVEN_HOME points to installed mvn binary (or use auto-install)
+
+4. **Job logs & artifacts**:
+
+   * Console output: Job → Build # → Console Output
+   * Artifacts: Job → Build # → Last Successful Artifacts → click files
+
+---
+
+# Troubleshooting quick checklist
+
+1. Build fails → open Console Output, read Maven failure stacktrace. Fix pom or dependencies.
+2. Copy artifacts fails → ensure upstream build archived artifacts and `**/*` matches files.
+3. Tomcat deploy fails → check Tomcat logs (`catalina.out`), check manager credentials and URL.
+4. Plugin missing errors → Manage Plugins → ensure required plugin installed and compatible with Jenkins version.
+5. Git clone auth fails → re-check credentials or repo URL and network access.
+
+---
+
+# Final notes (copy/paste checklist for your lab sheet)
+
+* Use exact job names: `MavenJava_Build`, `MavenJava_Test`, `MavenJava_Pipeline`
+  and `MavenWeb_Build`, `MavenWeb_Test`, `MavenWeb_Deploy`, `MavenWeb_Pipeline`.
+* Use `MAVEN_HOME` as the Maven version label everywhere.
+* Use `**/*` to archive/copy all artifacts.
+* Use triggers: downstream builds only when upstream is **stable**.
+* For Tomcat use correct URL and credentials; context path = `webpath`.
+
+---
+
+
