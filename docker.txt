@@ -1,0 +1,75 @@
+
+---
+
+1. `mkdir ~/DockerProjects/Redis && cd ~/DockerProjects/Redis` — create and enter a project folder.
+2. `printf 'FROM redis:latest\nCMD [\"redis-server\"]\n' > Dockerfile` — create a minimal `Dockerfile` that starts Redis.
+3. `ls -la` — quick check that `Dockerfile` is present.
+4. `docker build -t redisnew .` — build an image from the Dockerfile and tag it `redisnew`.
+5. `docker images` — list local images to confirm `redisnew` exists.
+6. `docker run --name myredisnew -d redisnew` — start a container named `myredisnew` from the `redisnew` image (detached/background).
+7. `docker ps` — list running containers to confirm `myredisnew` is up.
+8. `docker logs myredisnew` — view the container logs (useful when app fails to start).
+9. `docker exec -it myredisnew redis-cli` — open the Redis CLI inside the running container.
+10. `SET name "Alice"` — (inside redis-cli) store a key `name` with value `Alice`.
+11. `GET name` — (inside redis-cli) retrieve the value of `name`.
+12. `exit` — leave redis-cli.
+13. `docker stop myredisnew` — stop the running container (container remains on disk).
+14. `docker start myredisnew` — start the stopped container again.
+15. `docker inspect myredisnew` — show detailed JSON metadata (ports, mounts, envs, network).
+16. `docker exec -it myredisnew /bin/sh` — open a shell inside the container for debugging (use `/bin/bash` if available).
+17. `docker commit myredisnew yourdockerhubusername/redis1:lab` — snapshot the container to a new image tag.
+18. `docker tag redisnew yourdockerhubusername/redisnew:latest` — tag a local image for pushing to Docker Hub.
+19. `docker login` — log in to Docker Hub (interactive prompt for username/password).
+20. `docker push yourdockerhubusername/redis1:lab` — push the committed image to your Docker Hub repo.
+21. `docker ps -a` — list all containers including stopped ones (useful after many starts/stops).
+22. `docker rm myredisnew` — remove the stopped container named `myredisnew`.
+23. `docker rmi redisnew` — remove the local image `redisnew`.
+24. `docker pull redis` — re-download the official Redis image (demo pull).
+25. `docker run --name my-redis-port -d -p 6379:6379 redis` — run Redis mapping container port 6379 → host 6379 so host apps can connect.
+26. `ss -tuln | grep 6379` or `netstat -tuln | grep 6379` — verify host port 6379 is listening (choose command available on your OS).
+27. `docker stop my-redis-port && docker rm my-redis-port` — stop and remove the port-mapped container when done.
+28. `docker network create lab-net` — create a user-defined bridge network for container-to-container communication.
+29. `docker run --name redis-server --network lab-net -d redis` — run redis on `lab-net`.
+30. `docker run --name redis-client --network lab-net -it busybox sh` — run a temporary client on same network to test connectivity.
+31. `ping redis-server` (inside busybox) — verify client can resolve and reach `redis-server` by name.
+32. `docker network ls` — list Docker networks.
+33. `docker network inspect lab-net` — inspect network details (containers attached, subnets).
+34. `docker volume create redis-data` — create a named volume for persistent Redis data.
+35. `docker run --name redis-persist -d -v redis-data:/data redis` — run Redis with `/data` mounted to named volume `redis-data` (data persists across container removal).
+36. `docker volume ls` — list volumes to confirm `redis-data` exists.
+37. `docker run -d --name web_app -p 8080:5000 --memory=512m --restart=on-failure:5 your_web_image` — example: run a web app with memory limit 512MB and restart policy.
+38. `docker stats --no-stream` — show current CPU/memory usage for running containers (one-off snapshot).
+39. `docker top <container>` — show processes running inside a container.
+40. `docker logs -f <container>` — follow live logs (press Ctrl+C to stop following).
+41. `docker save -o redis1.tar yourdockerhubusername/redis1:lab` — export an image to `redis1.tar` for offline transfer.
+42. `docker load -i redis1.tar` — import an image from a tar archive on another machine.
+43. `docker save yourdockerhubusername/redis1:lab | gzip > redis1.tar.gz` — save and compress an image to save disk/bandwidth.
+44. `docker history yourdockerhubusername/redis1:lab` — show image layer history and sizes.
+45. `docker image prune -f` — remove dangling (untagged) images to free space.
+46. `docker system prune -a -f` — aggressively remove stopped containers, unused networks, dangling and unused images (be careful: deletes lots).
+47. `docker logout` — log out of Docker Hub.
+48. `docker run --rm -d --name tmpredis -p 7000:6379 redis redis-server --appendonly yes` — run Redis with a runtime flag enabling append-only persistence, and `--rm` will auto-remove container when stopped.
+49. `# OPTIONAL: create a better Dockerfile (optional advanced)`
+
+```dockerfile
+FROM redis:6.2
+LABEL maintainer="you@example.com"
+COPY redis.conf /usr/local/etc/redis/redis.conf
+VOLUME ["/data"]
+EXPOSE 6379
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]
+```
+
+— this Dockerfile shows adding custom config, a persistent volume, and exposing a port.
+50. `docker build -t yourdockerhubusername/custom-redis:lab2 .` — build the advanced Dockerfile image.
+
+---
+
+## Quick tips / placeholders
+
+* Replace `yourdockerhubusername` with your Docker Hub username.
+* Use `docker ps -a` to find container IDs and names if you forgot them.
+* Use `/bin/sh` inside minimal images (Alpine/BusyBox); use `/bin/bash` for larger images.
+* Use `-it` to get an interactive terminal; omit `-d` to run foreground (useful while debugging).
+
+---
