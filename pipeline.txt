@@ -1,0 +1,184 @@
+
+# ⭐ **WEEK 9 — DETAILED STEP-BY-STEP PROCEDURE (EXAM-READY VERSION)**
+
+### *Scripted Pipeline Creation in Jenkins*
+
+---
+
+# ✅ **STEP 1 — OPEN JENKINS**
+
+1. Start Jenkins if not already running.
+2. Open your browser.
+3. Enter:
+
+   ```
+   http://localhost:8080
+   ```
+4. Press Enter.
+5. Login with your Jenkins username/password (if required).
+6. Wait until the Jenkins dashboard appears.
+
+---
+
+# ✅ **STEP 2 — CREATE A NEW PIPELINE JOB**
+
+1. On the left side of the dashboard, click **New Item**.
+2. A new page will open asking for the project name.
+3. In the box at the top, type the job name exactly:
+
+   ```
+   ScriptedPipeline_Maven
+   ```
+4. Below the textbox, many project types will appear.
+5. Click on **Pipeline** (the one with the pipeline icon).
+6. After selecting Pipeline, scroll down.
+7. Click the **OK** button.
+8. Jenkins will now open the project configuration page.
+
+---
+
+# ✅ **STEP 3 — FILL THE GENERAL SECTION**
+
+1. In the new page, at the very top, you will see “General”.
+2. Under **Description**, click inside the box.
+3. Type the following description:
+
+   ```
+   Scripted Pipeline for Maven project using Jenkins.
+   ```
+4. Leave other General options as default.
+
+---
+
+# ✅ **STEP 4 — CONFIGURE BUILD TRIGGERS (OPTIONAL)**
+
+Your exam may or may not require this, but to be safe:
+
+1. Scroll down until you see “Build Triggers”.
+2. Check any of these if required by your trainer:
+
+   * **Build periodically**
+   * **Poll SCM**
+   * **GitHub hook trigger for GITScm polling**
+3. If your exam does not require any triggers, leave all empty.
+
+---
+
+# ✅ **STEP 5 — OPEN THE PIPELINE SCRIPT SECTION**
+
+1. Scroll down until you see the heading **Pipeline**.
+2. There is an option named **Definition**.
+3. Click the drop-down next to Definition.
+4. Select:
+
+   ```
+   Pipeline script
+   ```
+5. A big text box will appear—this is where you paste your script.
+
+---
+
+# ✅ **STEP 6 — PASTE THE PIPELINE SCRIPT (VERY IMPORTANT)**
+
+👉 **YOU MUST EDIT ONLY TWO THINGS IN THIS SCRIPT:**
+
+* Replace the GitHub link
+* Replace the project folder name if not `mavenjava`
+
+Now paste this EXACT script into the Pipeline Script box:
+
+```
+pipeline {
+    agent any
+    tools{
+        maven 'MAVEN-HOME'
+    }
+    stages {
+        stage('git repo & clean') {
+            steps {
+                bat "git clone YOUR_GITHUB_REPOSITORY_LINK_HERE"
+                bat "mvn clean -f mavenjava"
+            }
+        }
+        stage('install') {
+            steps {
+                bat \"mvn install -f mavenjava\"
+            }
+        }
+        stage('test') {
+            steps {
+                bat \"mvn test -f mavenjava\"
+            }
+        }
+        stage('package') {
+            steps {
+                bat \"mvn package -f mavenjava\"
+            }
+        }
+    }
+}
+```
+
+---
+
+# ⚠️ **VERY IMPORTANT — YOU MUST EDIT THIS BEFORE SAVING**
+
+### **1. Replace the GitHub link**
+
+Example:
+
+```
+git clone https://github.com/username/maven-java-project.git
+```
+
+### **2. Replace mavenjava if your folder name is different**
+
+If your Git repo has a folder called `studentapp`, then change:
+
+```
+-f mavenjava
+```
+
+to:
+
+```
+-f studentapp
+```
+
+➡️ DO NOT FORGET THIS OR YOUR PIPELINE WILL FAIL.
+
+---
+
+# ✅ **STEP 7 — APPLY AND SAVE THE JOB**
+
+1. Scroll all the way down to the bottom of the page.
+2. Click **Apply** (this saves without leaving the page).
+3. Then click **Save** (this returns you to the job homepage).
+
+Your scripted pipeline job is now created.
+
+---
+
+# ✅ **STEP 8 — RUN THE PIPELINE**
+
+1. On the left side of the job homepage, click:
+
+   ```
+   Build Now
+   ```
+2. A build number (ex: #1) will appear under “Build History”.
+3. Click on **#1** (the build number).
+4. Then click **Console Output**.
+5. The console will show:
+
+   * Jenkins node setup
+   * Git cloning
+   * Maven clean
+   * Maven install
+   * Maven test
+   * Maven package
+
+➡️ If everything works, you will see **SUCCESS** at the bottom.
+
+---
+
