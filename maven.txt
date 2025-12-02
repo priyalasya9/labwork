@@ -1,0 +1,68 @@
+# Maven Java project — quick step-by-step (Eclipse GUI)
+
+1. **Open Eclipse** → choose workspace.
+2. **File → New → Project… → Maven → Maven Project → Next.**
+3. Uncheck *Create a simple project* → **Next**.
+4. Search archetype `quickstart` → select **maven-archetype-quickstart** → **Next**.
+5. Fill: **Group Id** `com.example`, **Artifact Id** `my-java-app` → **Finish**.
+6. Open `src/main/java/.../App.java` → edit main if needed.
+7. Right-click project → **Run As → Maven clean**.
+8. Right-click project → **Run As → Maven install** → check **Console** for `BUILD SUCCESS`.
+9. Run program: open `App.java` → **Run As → Java Application** → output in **Console**.
+10. Artifact location: `project/target/*.jar`; local repo: `~/.m2/repository/...`.
+
+---
+
+# Maven Java project — quick step-by-step (Terminal)
+
+1. `mvn archetype:generate -DgroupId=com.example -DartifactId=my-java-app -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false`
+2. `cd my-java-app`
+3. `mvn clean install` → check terminal for `BUILD SUCCESS`.
+4. Run: `java -cp target/my-java-app-1.0-SNAPSHOT.jar com.example.App`
+
+---
+
+# Maven Web (WAR) project — quick step-by-step (Eclipse GUI)
+
+1. **Open Eclipse**.
+2. **File → New → Project… → Maven → Maven Project → Next.**
+3. Select archetype `maven-archetype-webapp` → **Next**.
+4. Fill: **Group Id** `com.example`, **Artifact Id** `my-web-app` → **Finish**.
+5. Open `pom.xml` → ensure `<packaging>war</packaging>` and add servlet dependency:
+
+   ```xml
+   <dependency>
+     <groupId>javax.servlet</groupId>
+     <artifactId>javax.servlet-api</artifactId>
+     <version>4.0.1</version>
+     <scope>provided</scope>
+   </dependency>
+   ```
+6. Edit `src/main/webapp/index.jsp` to show `Hello, Maven Web App!`.
+7. Window → **Show View → Servers** → Add **Apache Tomcat v9.0** (point to Tomcat folder).
+8. Right-click project → **Run As → Maven clean** then **Maven package** (or install).
+9. Right-click `index.jsp` → **Run As → Run on Server** → choose Tomcat → **Finish**.
+10. Open browser: `http://localhost:8080/<artifactId>/index.jsp` → see page.
+11. WAR location: `project/target/*.war`. Tomcat logs: `TOMCAT_HOME/logs/`.
+
+---
+
+# Maven Web — quick step-by-step (Terminal)
+
+1. `mvn archetype:generate -DgroupId=com.example -DartifactId=my-web-app -DarchetypeArtifactId=maven-archetype-webapp -DinteractiveMode=false`
+2. Edit `pom.xml` to add servlet dependency (scope `provided`) and `<packaging>war</packaging>`.
+3. `mvn clean package` → WAR appears in `target/`.
+4. Copy WAR to Tomcat `webapps/` and start Tomcat (`bin/startup.sh` or `startup.bat`).
+5. Open `http://localhost:8080/my-web-app/index.jsp`.
+
+---
+
+# Quick fixes (if something goes wrong)
+
+* **pom.xml shows error** → Right-click project → **Maven → Update Project** (force update).
+* **Dependency missing / compile error** → add correct dependency coordinates; run `mvn clean install`.
+* **UnsupportedClassVersionError** → set `maven.compiler.source` & `target` to your JDK (e.g. `17`) in `pom.xml` and ensure Eclipse uses same JDK.
+* **404 on web page** → check context path (Servers view) and Tomcat console logs.
+* **Console missing in Eclipse** → Window → Show View → Console.
+
+---
