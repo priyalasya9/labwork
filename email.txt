@@ -93,3 +93,180 @@ Ensure App Password is correct
 Ensure outgoing port is not blocked
 
 ✔️ Done! Email notifications are now enabled.
+
+Below is a **clear, beginner-friendly, step-by-step guide** showing EXACTLY how to create a Jenkins pipeline for a GitHub repo **and send email notifications on success** — all through the **Jenkins UI**, from start to finish.
+
+---
+
+# ✅ **PART 1 — Prerequisites**
+
+Before starting, make sure you have:
+
+* Jenkins installed & running
+* Git installed on the Jenkins machine
+* SMTP email setup (Email Extension Plugin + Gmail App Password, etc.)
+* A GitHub repository URL (public or private)
+
+---
+
+# ✅ **PART 2 — Setup Email Extension Plugin (Only once)**
+
+You have already detailed these steps, but I will summarize cleanly:
+
+### **Step 1 — Install Email Extension Plugin**
+
+1. Open **Jenkins Dashboard**
+2. Go to **Manage Jenkins**
+3. Click **Manage Plugins**
+4. Go to **Available**
+5. Search **"Email Extension Plugin"**
+6. Tick the checkbox
+7. Click **Install without restart**
+8. Restart Jenkins
+
+---
+
+# 🟦 **PART 3 — Configure Email (SMTP + Extended Email)**
+
+### **Step 2 — Configure SMTP Server**
+
+1. Go to **Manage Jenkins**
+2. Click **System**
+3. Scroll to **Email Notification**
+4. Enter:
+
+| Field                   | Value                                  |
+| ----------------------- | -------------------------------------- |
+| SMTP server             | smtp.gmail.com                         |
+| Use SMTP Authentication | ✔                                      |
+| Username                | your Gmail                             |
+| Password                | Gmail App Password (NOT real password) |
+| Use SSL                 | ✔                                      |
+| SMTP Port               | 465                                    |
+
+5. Click **Test configuration**
+6. Enter your email → Click **Test**
+
+If email is received → SMTP works.
+
+---
+
+### **Step 3 — Configure Extended Email Notification**
+
+Still on the same page:
+
+1. Scroll to **Extended E-mail Notification**
+2. Fill these:
+
+| Field                      | Value                        |
+| -------------------------- | ---------------------------- |
+| SMTP server                | smtp.gmail.com               |
+| Default user e-mail suffix | @gmail.com                   |
+| SMTP Port                  | 465                          |
+| Use SSL                    | ✔                            |
+| Credentials                | Select your Gmail credential |
+
+3. Click **Apply** → **Save**
+
+---
+
+# 🟩 **PART 4 — Create a Jenkins Pipeline From a GitHub Repo**
+
+### **Step 4 — Create a New Pipeline Job**
+
+1. Go to **Jenkins Dashboard**
+2. Click **New Item**
+3. Enter a name:
+   **MyGitHubPipeline**
+4. Select **Pipeline**
+5. Click **OK**
+
+---
+
+### **Step 5 — Connect Pipeline to GitHub Repository**
+
+Inside the job:
+
+1. Go to **Build Triggers**
+
+2. Enable:
+   ✔ **GitHub hook trigger for GITScm polling** (if using webhook)
+   OR
+   ✔ **Poll SCM** → `H/5 * * * *` (poll every 5 minutes)
+
+3. Go to **Pipeline** section
+
+4. In "Definition", select:
+
+   **Pipeline script from SCM**
+
+5. Now fill:
+
+| Field             | Value                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| SCM               | Git                                                                                         |
+| Repository URL    | your GitHub URL (e.g. [https://github.com/user/repo.git](https://github.com/user/repo.git)) |
+| Credentials       | Add → GitHub token (if private repo)                                                        |
+| Branches to build | main or master                                                                              |
+
+6. Script path:
+
+```
+Jenkinsfile
+```
+
+7. Click **Save**
+
+---
+
+# 🟥 **PART 5 — Add Jenkinsfile to Your GitHub Repo**
+
+Create a file called **Jenkinsfile** in your repo:
+
+```groovy
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo "Running the build..."
+            }
+        }
+    }
+
+    post {
+        success {
+            emailext(
+                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build completed successfully for job: ${env.JOB_NAME}",
+                to: "lasyapriyasoma@gmail.com"
+            )
+        }
+        failure {
+            emailext(
+                subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build failed! Please check Jenkins.",
+                to: "lasyapriyasoma@gmail.com"
+            )
+        }
+    }
+}
+```
+
+Commit + push this file.
+
+---
+
+# 🟧 **PART 6 — Run & Test the Pipeline**
+
+### **Step 6 — Build Job Manually**
+
+1. Open the pipeline job
+2. Click **Build Now**
+3. Jenkins fetches your GitHub repo & runs the Jenkinsfile
+
+---
+
+
+
